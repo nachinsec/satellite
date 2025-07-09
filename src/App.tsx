@@ -12,6 +12,10 @@ function App() {
     setGreetMsg(await invoke("greet", { name: name() }));
   }
 
+  async function launchMinecraft() {
+    await invoke("launch_minecraft");
+  }
+
   return (
     <main class="container">
       <h1>Welcome to Tauri + Solid</h1>
@@ -44,6 +48,8 @@ function App() {
         <button type="submit">Greet</button>
       </form>
       <p>{greetMsg()}</p>
+
+      <button onClick={launchMinecraft}>Launch Minecraft</button>
     </main>
   );
 }
