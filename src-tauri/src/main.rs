@@ -15,7 +15,7 @@ fn main() {
         println!("{}", library.name);
     }
 
-    let jar_path = format!("{}/{}", base_dir, first_version.id);
+    let jar_path = format!("{}/versions/{}/{}.jar", base_dir, first_version.id, first_version.id);
     let jar_url = &version_json.downloads.client.url;
     minecraft_api::download_file(jar_url, &jar_path).unwrap();
     println!("Jar downloaded to: {}", jar_path);
