@@ -1,0 +1,10 @@
+{
+  "watch": {
+    "ignore": [
+      "node_modules",
+      "dist",
+      "src-tauri/.minecraft_fake",
+      "src-tauri/logs"
+    ]
+  }
+}

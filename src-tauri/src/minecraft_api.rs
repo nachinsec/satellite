@@ -1,4 +1,5 @@
 use serde::Deserialize;
+use serde_json::Value;
 use std::fs;
 use std::io::Write;
 use std::path::Path;
@@ -15,7 +16,7 @@ pub struct MinecraftVersion {
     pub url: String,
 }
 
-#[derive(Debug, serde::Deserialize)]
+#[derive(Debug, Deserialize)]
 pub struct VersionJson {
     pub mainClass: String,
     pub arguments: Option<Arguments>,
@@ -24,36 +25,36 @@ pub struct VersionJson {
     pub assetIndex: AssetIndex,
 }
 
-#[derive(Debug, serde::Deserialize)]
+#[derive(Debug, Deserialize)]
 pub struct Arguments {
-    pub game: Option<Vec<serde_json::Value>>,
-    pub jvm: Option<Vec<serde_json::Value>>,
+    pub game: Option<Vec<Value>>,
+    pub jvm: Option<Vec<Value>>,
 }
 
-#[derive(Debug, serde::Deserialize)]
+#[derive(Debug, Deserialize)]
 pub struct Library {
     pub name: String,
     pub downloads: Option<LibraryDownloads>,
 }
 
-#[derive(Debug, serde::Deserialize)]
+#[derive(Debug, Deserialize)]
 pub struct LibraryDownloads {
     pub artifact: Option<DownloadInfo>,
-    pub classifiers: Option<serde_json::Value>,
+    pub classifiers: Option<Value>,
 }
 
-#[derive(Debug, serde::Deserialize)]
+#[derive(Debug, Deserialize)]
 pub struct DownloadInfo {
     pub url: String,
     pub path: Option<String>,
 }
 
-#[derive(Debug, serde::Deserialize)]
+#[derive(Debug, Deserialize)]
 pub struct Downloads {
     pub client: DownloadInfo,
 }
 
-#[derive(Debug, serde::Deserialize)]
+#[derive(Debug, Deserialize)]
 pub struct AssetIndex {
     pub id: String,
     pub url: String,
@@ -90,5 +91,23 @@ pub fn download_file(url: &str, path: &str) -> Result<(), Box<dyn std::error::Er
     }
     let mut file = fs::File::create(path)?;
     file.write_all(&bytes)?;
+    Ok(())
+}
+
+pub fn download_assets(assets_index_path: &str, base_dir: &str) -> Result<(), Box<dyn std::error::Error>> {
+    let index_str = std::fs::read_to_string(assets_index_path)?;
+    let index_json: Value = serde_json::from_str(&index_str)?;
+    let objects = &index_json["objects"];
+
+    for (asset_name, asset_info) in objects.as_object().unwrap() {
+        let hash = asset_info["hash"].as_str().unwrap();
+        let subdir = &hash[0..2];
+        let asset_url = format!("https://resources.download.minecraft.net/{}/{}", subdir, hash);
+        let asset_path = format!("{}/assets/objects/{}/{}", base_dir, subdir, hash);
+        if !std::path::Path::new(&asset_path).exists() {
+            download_file(&asset_url, &asset_path)?;
+            println!("Descargado asset: {}", asset_name);
+        }
+    }
     Ok(())
 }

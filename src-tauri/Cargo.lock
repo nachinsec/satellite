@@ -3225,6 +3225,7 @@ dependencies = [
 name = "satellite"
 version = "0.1.0"
 dependencies = [
+ "glob",
  "reqwest",
  "serde",
  "serde_json",
