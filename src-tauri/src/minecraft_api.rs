@@ -1,9 +1,10 @@
 use serde::Deserialize;
 use serde_json::Value;
+use tauri::Emitter;
 use std::fs;
 use std::io::Write;
 use std::path::Path;
-
+use reqwest::Client;
 #[derive(Debug, Deserialize)]
 pub struct VersionManifest {
     pub versions: Vec<MinecraftVersion>,
@@ -59,10 +60,10 @@ pub struct AssetIndex {
     pub id: String,
     pub url: String,
 }
-pub fn download_version_manifest() -> Result<String, Box<dyn std::error::Error>> {
+pub async fn download_version_manifest(client: &Client) -> Result<String, Box<dyn std::error::Error>> {
     let url = "https://launchermeta.mojang.com/mc/game/version_manifest.json";
-    let resp = reqwest::blocking::get(url)?;
-    let text = resp.text()?;
+    let resp = client.get(url).send().await?;
+    let text = resp.text().await?;
     Ok(text)
 }
 
@@ -71,9 +72,9 @@ pub fn parse_version_manifest(json: &str) -> Result<VersionManifest, Box<dyn std
     Ok(manifest)
 }
 
-pub fn download_version_json(url: &str) -> Result<String, Box<dyn std::error::Error>> {
-    let resp = reqwest::blocking::get(url)?;
-    let text = resp.text()?;
+pub async fn download_version_json(client: &Client, url: &str) -> Result<String, Box<dyn std::error::Error>> {
+    let resp = client.get(url).send().await?;
+    let text = resp.text().await?;
     Ok(text)
 }
 
@@ -82,9 +83,9 @@ pub fn parse_version_json(json: &str) -> Result<VersionJson, Box<dyn std::error:
     Ok(version_json)
 }
 
-pub fn download_file(url: &str, path: &str) -> Result<(), Box<dyn std::error::Error>> {
-    let resp = reqwest::blocking::get(url)?;
-    let bytes = resp.bytes()?;
+pub async fn download_file(client: &Client,url: &str, path: &str) -> Result<(), Box<dyn std::error::Error>> {
+    let resp = client.get(url).send().await?;
+    let bytes = resp.bytes().await?;
     let parent = Path::new(path).parent().unwrap();
     if !parent.exists() {
         fs::create_dir_all(parent)?;
@@ -94,20 +95,36 @@ pub fn download_file(url: &str, path: &str) -> Result<(), Box<dyn std::error::Er
     Ok(())
 }
 
-pub fn download_assets(assets_index_path: &str, base_dir: &str) -> Result<(), Box<dyn std::error::Error>> {
-    let index_str = std::fs::read_to_string(assets_index_path)?;
-    let index_json: Value = serde_json::from_str(&index_str)?;
+pub async fn download_assets(
+    client: &reqwest::Client,
+    assets_index_path: &str,
+    base_dir: &str,
+    window: tauri::Window
+) {
+    use futures::stream::{FuturesUnordered, StreamExt};
+    use serde_json::Value;
+
+    let index_str = std::fs::read_to_string(assets_index_path).unwrap();
+    let index_json: Value = serde_json::from_str(&index_str).unwrap();
     let objects = &index_json["objects"];
+    let mut futures = FuturesUnordered::new();
 
     for (asset_name, asset_info) in objects.as_object().unwrap() {
-        let hash = asset_info["hash"].as_str().unwrap();
-        let subdir = &hash[0..2];
+        let hash = asset_info["hash"].as_str().unwrap().to_owned();
+        let subdir = hash[0..2].to_string();
         let asset_url = format!("https://resources.download.minecraft.net/{}/{}", subdir, hash);
         let asset_path = format!("{}/assets/objects/{}/{}", base_dir, subdir, hash);
+
         if !std::path::Path::new(&asset_path).exists() {
-            download_file(&asset_url, &asset_path)?;
-            println!("Descargado asset: {}", asset_name);
+            let client = client.clone();
+            let window = window.clone();
+            let asset_name = asset_name.clone();
+            futures.push(tokio::spawn(async move {
+                let _ = download_file(&client, &asset_url, &asset_path).await;
+                let _ = window.emit("log", format!("Descargado asset: {}", asset_name));
+            }));
         }
     }
-    Ok(())
+
+    while let Some(_) = futures.next().await {}
 }

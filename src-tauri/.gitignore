@@ -8,6 +8,7 @@
 
 # Minecraft fake
 /.minecraft_fake
+/.minecraft_fake_
 
 # Logs
 /logs
