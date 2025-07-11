@@ -1,12 +1,12 @@
-import { createSignal } from "solid-js";
+import { createSignal, onMount } from "solid-js";
 import logo from "./assets/logo.svg";
 import { invoke } from "@tauri-apps/api/core";
 import "./App.css";
-
+import { listen } from "@tauri-apps/api/event";
 function App() {
   const [greetMsg, setGreetMsg] = createSignal("");
   const [name, setName] = createSignal("");
-
+  const [logs, setLogs] = createSignal<string[]>([]);
   async function greet() {
     // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
     setGreetMsg(await invoke("greet", { name: name() }));
@@ -15,6 +15,18 @@ function App() {
   async function launchMinecraft() {
     await invoke("launch_minecraft");
   }
+
+  async function startLauncher() {
+    await invoke("start_launcher");
+  }
+
+  onMount(() => {
+    startLauncher();
+  });
+
+  listen("log", (event) => {
+    setLogs((logs) => [...logs, event.payload as string]);
+  });
 
   return (
     <main class="container">
@@ -50,6 +62,12 @@ function App() {
       <p>{greetMsg()}</p>
 
       <button onClick={launchMinecraft}>Launch Minecraft</button>
+
+      <div class="logs">
+        {logs().map((log) => (
+          <p>{log}</p>
+        ))}
+      </div>
     </main>
   );
 }
