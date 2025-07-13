@@ -1,73 +1,82 @@
-import { createSignal, onMount } from "solid-js";
-import logo from "./assets/logo.svg";
+import { createSignal } from "solid-js";
 import { invoke } from "@tauri-apps/api/core";
 import "./App.css";
 import { listen } from "@tauri-apps/api/event";
+import logo from "./assets/logo.svg";
 function App() {
-  const [greetMsg, setGreetMsg] = createSignal("");
-  const [name, setName] = createSignal("");
   const [logs, setLogs] = createSignal<string[]>([]);
-  async function greet() {
-    // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
-    setGreetMsg(await invoke("greet", { name: name() }));
-  }
-
-  async function launchMinecraft() {
-    await invoke("launch_minecraft");
-  }
-
+  const [progress, setProgress] = createSignal(0);
+  const [showAll, setShowAll] = createSignal(false);
+  const MAX_LOGS = 50;
+  let logRef: HTMLDivElement | undefined;
   async function startLauncher() {
     await invoke("start_launcher");
   }
 
-  onMount(() => {
-    startLauncher();
-  });
-
   listen("log", (event) => {
     setLogs((logs) => [...logs, event.payload as string]);
+    logRef?.scrollTo({ top: logRef.scrollHeight });
   });
 
+  listen("progress", (event) => {
+    setProgress(event.payload as number);
+  });
+
+  function getLog(): string {
+    const all = logs();
+    if (showAll()) return all.join("\n");
+    return all.slice(-MAX_LOGS).join("\n");
+  }
+
   return (
-    <main class="container">
-      <h1>Welcome to Tauri + Solid</h1>
-
-      <div class="row">
-        <a href="https://vitejs.dev" target="_blank">
-          <img src="/vite.svg" class="logo vite" alt="Vite logo" />
-        </a>
-        <a href="https://tauri.app" target="_blank">
-          <img src="/tauri.svg" class="logo tauri" alt="Tauri logo" />
-        </a>
-        <a href="https://solidjs.com" target="_blank">
-          <img src={logo} class="logo solid" alt="Solid logo" />
-        </a>
-      </div>
-      <p>Click on the Tauri, Vite, and Solid logos to learn more.</p>
-
-      <form
-        class="row"
-        onSubmit={(e) => {
-          e.preventDefault();
-          greet();
-        }}
+    <main class="flex flex-col items-center justify-center h-full w-full gap-4 p-4">
+      <h1 class="text-3xl font-bold">Satellite</h1>
+      <button
+        class="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded"
+        onClick={startLauncher}
       >
-        <input
-          id="greet-input"
-          onChange={(e) => setName(e.currentTarget.value)}
-          placeholder="Enter a name..."
+        Launch Minecraft
+      </button>
+      <div class="w-full bg-gray-200 rounded-full h-2.5 dark:bg-gray-700">
+        <div
+          class="bg-green-500 h-2.5 rounded-full dark:bg-green-600"
+          style={{
+            width: `${progress() * 100}%`,
+            height: "100%",
+            background: "#4caf50",
+            "border-radius": "8px",
+            transition: "width 0.2s",
+          }}
         />
-        <button type="submit">Greet</button>
-      </form>
-      <p>{greetMsg()}</p>
-
-      <button onClick={launchMinecraft}>Launch Minecraft</button>
-
-      <div class="logs">
-        {logs().map((log) => (
-          <p>{log}</p>
-        ))}
       </div>
+      <div
+        class="logs w-full"
+        style={{
+          "overflow-y": "scroll",
+          height: "40vh",
+          "max-height": "40vh",
+          "white-space": "pre-wrap",
+          "background-color": "#333",
+          color: "#fff",
+          "text-align": "left",
+          "border-radius": "8px",
+          padding: "0.5rem 1rem",
+        }}
+        ref={logRef}
+      >
+        {getLog()}
+      </div>
+      <button
+        class="bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded"
+        onClick={() =>
+          setShowAll((v) => {
+            logRef?.scrollTo({ top: logRef.scrollHeight });
+            return !v;
+          })
+        }
+      >
+        {showAll() ? "Hide" : "Show All"}
+      </button>
     </main>
   );
 }
