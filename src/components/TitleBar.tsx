@@ -10,12 +10,7 @@ export default function TitleBar() {
       }}
     >
       <div class="flex items-center gap-2">
-        <img
-          src="./public/logo.png"
-          alt="Logo"
-          class="w-6 h-6"
-          draggable={false}
-        />
+        <img src="logo.png" alt="Logo" class="w-6 h-6" draggable={false} />
         <span class="text-white font-bold tracking-wide text-lg">
           Satellite
         </span>
