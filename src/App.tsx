@@ -2,13 +2,16 @@ import { createSignal } from "solid-js";
 import { invoke } from "@tauri-apps/api/core";
 import "./App.css";
 import { listen } from "@tauri-apps/api/event";
-import logo from "./assets/logo.svg";
+import ListVersions from "./components/ListVersions";
 function App() {
   const [logs, setLogs] = createSignal<string[]>([]);
   const [progress, setProgress] = createSignal(0);
   const [showAll, setShowAll] = createSignal(false);
+  const [selectedVersion, setSelectedVersion] = createSignal("1.20.1");
+  const [showVersionSelector, setShowVersionSelector] = createSignal(false);
   const MAX_LOGS = 50;
   let logRef: HTMLDivElement | undefined;
+
   async function startLauncher() {
     await invoke("start_launcher");
   }
@@ -29,55 +32,92 @@ function App() {
   }
 
   return (
-    <main class="flex flex-col items-center justify-center h-full w-full gap-4 p-4">
-      <h1 class="text-3xl font-bold">Satellite</h1>
-      <button
-        class="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded"
-        onClick={startLauncher}
-      >
-        Launch Minecraft
-      </button>
-      <div class="w-full bg-gray-200 rounded-full h-2.5 dark:bg-gray-700">
-        <div
-          class="bg-green-500 h-2.5 rounded-full dark:bg-green-600"
-          style={{
-            width: `${progress() * 100}%`,
-            height: "100%",
-            background: "#4caf50",
-            "border-radius": "8px",
-            transition: "width 0.2s",
-          }}
+    <>
+      <main class="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-green-100 via-blue-50 to-white p-4">
+        <img
+          src="logo.png"
+          alt="Satellite Logo"
+          class="w-24 h-24 mb-2 drop-shadow-lg"
         />
-      </div>
-      <div
-        class="logs w-full"
-        style={{
-          "overflow-y": "scroll",
-          height: "40vh",
-          "max-height": "40vh",
-          "white-space": "pre-wrap",
-          "background-color": "#333",
-          color: "#fff",
-          "text-align": "left",
-          "border-radius": "8px",
-          padding: "0.5rem 1rem",
-        }}
-        ref={logRef}
-      >
-        {getLog()}
-      </div>
-      <button
-        class="bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded"
-        onClick={() =>
-          setShowAll((v) => {
-            logRef?.scrollTo({ top: logRef.scrollHeight });
-            return !v;
-          })
-        }
-      >
-        {showAll() ? "Hide" : "Show All"}
-      </button>
-    </main>
+        <h1 class="text-4xl font-extrabold text-gray-800 tracking-tight mb-2">
+          Satellite
+        </h1>
+        <div class="relative w-full max-w-sm flex">
+          <button
+            class="flex-1 flex items-center gap-2 bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-6 rounded-lg shadow-lg transition text-lg"
+            onClick={startLauncher}
+            style={{
+              "border-top-right-radius": "0",
+              "border-bottom-right-radius": "0",
+            }}
+          >
+            Launch {selectedVersion()}
+          </button>
+          <button
+            class="bg-green-500 hover:bg-green-600 text-white rounded-lg shadow-lg transition flex items-center px-3"
+            style={{
+              "border-top-left-radius": "0",
+              "border-bottom-left-radius": "0",
+            }}
+            onClick={() => setShowVersionSelector((v) => !v)}
+            aria-label="Select version"
+          >
+            <svg
+              class="w-5 h-5"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                d="M19 9l-7 7-7-7"
+              />
+            </svg>
+          </button>
+          {showVersionSelector() && (
+            <div class="absolute z-20 mt-[50px] w-full left-0">
+              <ListVersions
+                selectedVersion={selectedVersion()}
+                setSelectedVersion={(v: string) => {
+                  setSelectedVersion(v);
+                  setShowVersionSelector(false);
+                }}
+              />
+            </div>
+          )}
+        </div>
+        <div class="w-full mt-4">
+          <div
+            class="bg-black/80 rounded-lg p-4 font-mono text-sm text-green-100 shadow-inner h-40 overflow-y-auto border border-gray-700"
+            ref={logRef}
+          >
+            {getLog()}
+          </div>
+        </div>
+        <div class="w-full mt-4 bg-gray-200 rounded-full h-2.5 dark:bg-gray-700">
+          <div
+            class="bg-green-500 h-2.5 rounded-full dark:bg-green-600"
+            style={{
+              width: `${progress() * 100}%`,
+              transition: "width 0.2s",
+            }}
+          />
+        </div>
+        <button
+          class="bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded transition mt-4"
+          onClick={() =>
+            setShowAll((v) => {
+              logRef?.scrollTo({ top: logRef.scrollHeight });
+              return !v;
+            })
+          }
+        >
+          {showAll() ? "Hide" : "Show All"}
+        </button>
+      </main>
+    </>
   );
 }
 
