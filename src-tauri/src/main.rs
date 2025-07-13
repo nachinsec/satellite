@@ -51,24 +51,23 @@ async fn start_launcher(window: tauri::Window){
                     let lib_path = format!("{}/libraries/{}", base_dir, lib_path_rel);
                     if !std::path::Path::new(&lib_path).exists() {
                         minecraft_api::download_file(&client, &artifact.url, &lib_path).await.unwrap();
-                        window.emit("log", format!("Descargada librería: {}", lib_path)).ok();
+                        window.emit("log", format!("Downloaded library: {}", lib_path)).ok();
                     } else {
-                        window.emit("log", format!("Ya existe: {}", lib_path)).ok();
+                        window.emit("log", format!("Already exists: {}", lib_path)).ok();
                     }
                 }
             }
         }
     }
 
-    // Descarga assets en paralelo
-    window.emit("log", "Descargando assets en paralelo...").ok();
+    window.emit("log", "Downloading assets in parallel...").ok();
     let assets_index_path = format!("{}/assets/indexes/{}.json", base_dir, version_json.assetIndex.id);
     minecraft_api::download_file(&client, &version_json.assetIndex.url, &assets_index_path).await.unwrap();
 
     let asset_futures = minecraft_api::download_assets(&client, &assets_index_path, base_dir, window.clone());
     asset_futures.await;
 
-    window.emit("log", "¡Todos los assets descargados! Lanzando Minecraft...").ok();
+    window.emit("log", "All assets downloaded! Launching Minecraft...").ok();
 
 
     let mut classpath = Vec::new();

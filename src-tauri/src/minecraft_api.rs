@@ -103,10 +103,13 @@ pub async fn download_assets(
 ) {
     use futures::stream::{FuturesUnordered, StreamExt};
     use serde_json::Value;
-
+    use std::sync::Arc;
+    use tokio::sync::Mutex;
     let index_str = std::fs::read_to_string(assets_index_path).unwrap();
     let index_json: Value = serde_json::from_str(&index_str).unwrap();
     let objects = &index_json["objects"];
+    let total = objects.as_object().unwrap().len();
+    let progress = Arc::new(Mutex::new(0));
     let mut futures = FuturesUnordered::new();
 
     for (asset_name, asset_info) in objects.as_object().unwrap() {
@@ -119,12 +122,17 @@ pub async fn download_assets(
             let client = client.clone();
             let window = window.clone();
             let asset_name = asset_name.clone();
+            let progress = Arc::clone(&progress);
             futures.push(tokio::spawn(async move {
                 let _ = download_file(&client, &asset_url, &asset_path).await;
+                let mut prog=  progress.lock().await;
+                *prog += 1;
+                let _ = window.emit("progress", *prog as f64 / total as f64);
                 let _ = window.emit("log", format!("Descargado asset: {}", asset_name));
             }));
         }
     }
 
     while let Some(_) = futures.next().await {}
+    let _ = window.emit("progress", 1.0);
 }
