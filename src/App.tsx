@@ -3,6 +3,7 @@ import { invoke } from "@tauri-apps/api/core";
 import "./App.css";
 import { listen } from "@tauri-apps/api/event";
 import ListVersions from "./components/ListVersions";
+import TitleBar from "./components/TitleBar";
 function App() {
   const [logs, setLogs] = createSignal<string[]>([]);
   const [progress, setProgress] = createSignal(0);
@@ -33,7 +34,8 @@ function App() {
 
   return (
     <>
-      <main class="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-green-100 via-blue-50 to-white p-4">
+      <TitleBar />
+      <main class="h-screen flex flex-col items-center justify-center bg-gradient-to-br from-green-100 via-blue-50 to-white p-4">
         <img
           src="logo.png"
           alt="Satellite Logo"
