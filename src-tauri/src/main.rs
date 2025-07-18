@@ -61,8 +61,8 @@ async fn start_launcher(window: tauri::Window){
     }
 
     window.emit("log", "Downloading assets in parallel...").ok();
-    let assets_index_path = format!("{}/assets/indexes/{}.json", base_dir, version_json.assetIndex.id);
-    minecraft_api::download_file(&client, &version_json.assetIndex.url, &assets_index_path).await.unwrap();
+    let assets_index_path = format!("{}/assets/indexes/{}.json", base_dir, version_json.asset_index.id);
+    minecraft_api::download_file(&client, &version_json.asset_index.url, &assets_index_path).await.unwrap();
 
     let asset_futures = minecraft_api::download_assets(&client, &assets_index_path, base_dir, window.clone());
     asset_futures.await;
@@ -81,12 +81,12 @@ async fn start_launcher(window: tauri::Window){
     let output = Command::new("java")
     .arg("-cp")
     .arg(&classpath_str)
-    .arg(&version_json.mainClass)
+    .arg(&version_json.main_class)
     .arg("--username").arg("Player")
     .arg("--version").arg(&first_version.id)
     .arg("--gameDir").arg(base_dir)
     .arg("--assetsDir").arg(format!("{}/assets", base_dir))
-    .arg("--assetIndex").arg(&version_json.assetIndex.id)
+    .arg("--assetIndex").arg(&version_json.asset_index.id)
     .arg("--uuid").arg("N/A")
     .arg("--accessToken").arg("N/A")
     .arg("--userType").arg("legacy")

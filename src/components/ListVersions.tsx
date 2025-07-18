@@ -24,7 +24,7 @@ const ListVersions = (props: ListVersionsProps) => {
           class="text-xs px-2 py-1 rounded bg-blue-500 hover:bg-blue-600 text-white"
           onClick={() => setShowSnapshots((v) => !v)}
         >
-          {showSnapshots() ? "Ocultar Snapshots" : "Mostrar Snapshots"}
+          {showSnapshots() ? "Hide Snapshots" : "Show Snapshots"}
         </button>
       </div>
       <ul class="max-h-56 overflow-y-auto space-y-1">

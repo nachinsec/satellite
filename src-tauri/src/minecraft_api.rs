@@ -18,12 +18,13 @@ pub struct MinecraftVersion {
 }
 
 #[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct VersionJson {
-    pub mainClass: String,
+    pub main_class: String,
     pub arguments: Option<Arguments>,
     pub libraries: Vec<Library>,
     pub downloads: Downloads,
-    pub assetIndex: AssetIndex,
+    pub asset_index: AssetIndex,
 }
 
 #[derive(Debug, Deserialize)]
