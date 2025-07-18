@@ -4,12 +4,8 @@ import "./App.css";
 import { listen } from "@tauri-apps/api/event";
 import ListVersions from "./components/ListVersions";
 import TitleBar from "./components/TitleBar";
+import { Version } from "./utils/types";
 
-type Version = {
-  id: string;
-  type: string;
-  url: string;
-};
 function App() {
   const [logs, setLogs] = createSignal<string[]>([]);
   const [progress, setProgress] = createSignal(0);
