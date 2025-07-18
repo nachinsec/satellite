@@ -4,27 +4,33 @@ mod minecraft_api;
 use glob::glob;
 use std::process::Command;
 use tauri::Emitter;
+use crate::minecraft_api::MinecraftVersion;
+use reqwest::Client;
 fn main() {
     tauri::Builder::default()
-    .invoke_handler(tauri::generate_handler![launch_minecraft, start_launcher])
+    .invoke_handler(tauri::generate_handler![start_launcher, get_versions])
     .run(tauri::generate_context!())
     .expect("error while running tauri application");
-
 }
 
 #[tauri::command]
-fn launch_minecraft() -> Result<(), String> {
-    use std::process::Command;
-    Command::new("explorer.exe")
-        .arg(r"C:\Users\nacho\Desktop\Minecraft Launcher.lnk")
-        .spawn()
-        .map_err(|e| format!("Error al lanzar el acceso directo de Minecraft: {}", e))?;
-    Ok(())
+async fn get_versions() -> Result<Vec<MinecraftVersion>, String> {
+    let client = Client::new();
+    let manifest_json = minecraft_api::download_version_manifest(&client).await.map_err(|e| e.to_string())?;
+    let manifest = minecraft_api::parse_version_manifest(&manifest_json).map_err(|e| e.to_string())?;
+    let versions = manifest.versions.iter()
+    .map(|v| MinecraftVersion {
+        id: v.id.clone(),
+        r#type: v.r#type.clone(),
+        url: v.url.clone(),
+    })
+    .collect();
+    Ok(versions)
 }
+
 
 #[tauri::command]
 async fn start_launcher(window: tauri::Window){
-    use reqwest::Client;
     let base_dir = "./.minecraft_fake";
     let client = Client::new();
 
@@ -95,3 +101,4 @@ async fn start_launcher(window: tauri::Window){
     .expect("Error al lanzar Minecraft");
     window.emit("log", format!("Comando Java lanzado, revisa si se abre la ventana de Minecraft.")).unwrap();
 }
+

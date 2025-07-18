@@ -1,21 +1,37 @@
-import { createSignal } from "solid-js";
+import { createSignal, onMount } from "solid-js";
 import { invoke } from "@tauri-apps/api/core";
 import "./App.css";
 import { listen } from "@tauri-apps/api/event";
 import ListVersions from "./components/ListVersions";
 import TitleBar from "./components/TitleBar";
+
+type Version = {
+  id: string;
+  type: string;
+  url: string;
+};
 function App() {
   const [logs, setLogs] = createSignal<string[]>([]);
   const [progress, setProgress] = createSignal(0);
   const [showAll, setShowAll] = createSignal(false);
   const [selectedVersion, setSelectedVersion] = createSignal("1.20.1");
   const [showVersionSelector, setShowVersionSelector] = createSignal(false);
+  const [versions, setVersions] = createSignal<Version[]>([]);
   const MAX_LOGS = 50;
   let logRef: HTMLDivElement | undefined;
 
   async function startLauncher() {
     await invoke("start_launcher");
   }
+
+  async function getVersions() {
+    const versions = await invoke("get_versions");
+    setVersions(versions as Version[]);
+  }
+
+  onMount(() => {
+    getVersions();
+  });
 
   listen("log", (event) => {
     setLogs((logs) => [...logs, event.payload as string]);
@@ -81,6 +97,7 @@ function App() {
           {showVersionSelector() && (
             <div class="absolute z-20 mt-[50px] w-full left-0">
               <ListVersions
+                versions={versions()}
                 selectedVersion={selectedVersion()}
                 setSelectedVersion={(v: string) => {
                   setSelectedVersion(v);

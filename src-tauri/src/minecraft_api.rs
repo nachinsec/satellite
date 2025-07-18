@@ -1,4 +1,4 @@
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use tauri::Emitter;
 use std::fs;
@@ -10,7 +10,7 @@ pub struct VersionManifest {
     pub versions: Vec<MinecraftVersion>,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct MinecraftVersion {
     pub id: String,
     pub r#type: String,
