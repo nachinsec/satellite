@@ -17,7 +17,7 @@ function App() {
   let logRef: HTMLDivElement | undefined;
 
   async function startLauncher() {
-    await invoke("start_launcher");
+    await invoke("start_launcher", { version: selectedVersion() });
   }
 
   async function getVersions() {

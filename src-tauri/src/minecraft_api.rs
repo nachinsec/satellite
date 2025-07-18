@@ -49,6 +49,7 @@ pub struct LibraryDownloads {
 pub struct DownloadInfo {
     pub url: String,
     pub path: Option<String>,
+    pub sha1: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]
