@@ -39,6 +39,50 @@ body {
 .fade-out {
   animation: fade-out 0.3s cubic-bezier(.39,.58,.57,1) both;
 }
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+  background: transparent;
+}
+
+::-webkit-scrollbar-button {
+  display: none;
+  width: 0;
+  height: 0;
+
+}
+
+::-webkit-scrollbar-corner {
+  background: transparent !important;
+  display: none;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(135deg, #38bdf8 0%, #22d3ee 100%);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(135deg, #22d3ee 0%, #38bdf8 100%);
+}
+
+.bg-black\/80 ::-webkit-scrollbar-thumb {
+  background: #4ade80;
+}
+
+.bg-black\/80 ::-webkit-scrollbar-track {
+  background: #222;
+}
+
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #38bdf8 transparent;
+}
 /* .logo.vite:hover {
   filter: drop-shadow(0 0 2em #747bff);
 }
