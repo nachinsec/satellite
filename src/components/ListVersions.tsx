@@ -48,7 +48,7 @@ const ListVersions = (props: ListVersionsProps) => {
               }`}
               onClick={() => props.setSelectedVersion(version.id)}
             >
-              {version.id}
+              <span class="text-black dark:text-white">{version.id}</span>
               {props.selectedVersion === version.id && (
                 <span class="ml-auto text-green-600 dark:text-green-300">
                   ✓

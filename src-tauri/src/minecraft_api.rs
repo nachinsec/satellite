@@ -5,6 +5,31 @@ use std::fs;
 use std::io::Write;
 use std::path::Path;
 use reqwest::Client;
+use thiserror::Error;
+
+#[derive(Debug, Error)]
+pub enum LauncherError {
+    #[error("Network error: {0}")]
+    Network(#[from] reqwest::Error),
+    
+    #[error("File system error: {0}")]
+    FileSystem(#[from] std::io::Error),
+    
+    #[error("JSON parsing error: {0}")]
+    JsonParsing(#[from] serde_json::Error),
+    
+    #[error("Version not found: {version}")]
+    VersionNotFound { version: String },
+    
+    #[error("Failed to launch Minecraft: {error}")]
+    MinecraftLaunchError { error: String },
+
+    #[error("Configuration validation error in {field}: {message}")]
+    ConfigValidation { field: String, message: String },
+}
+
+pub type Result<T> = std::result::Result<T, LauncherError>;
+
 #[derive(Debug, Deserialize)]
 pub struct VersionManifest {
     pub versions: Vec<MinecraftVersion>,
@@ -62,30 +87,30 @@ pub struct AssetIndex {
     pub id: String,
     pub url: String,
 }
-pub async fn download_version_manifest(client: &Client) -> Result<String, Box<dyn std::error::Error>> {
+pub async fn download_version_manifest(client: &Client) -> Result<String> {
     let url = "https://launchermeta.mojang.com/mc/game/version_manifest.json";
     let resp = client.get(url).send().await?;
     let text = resp.text().await?;
     Ok(text)
 }
 
-pub fn parse_version_manifest(json: &str) -> Result<VersionManifest, Box<dyn std::error::Error>> {
+pub fn parse_version_manifest(json: &str) -> Result<VersionManifest> {
     let manifest: VersionManifest = serde_json::from_str(json)?;
     Ok(manifest)
 }
 
-pub async fn download_version_json(client: &Client, url: &str) -> Result<String, Box<dyn std::error::Error>> {
+pub async fn download_version_json(client: &Client, url: &str) -> Result<String> {
     let resp = client.get(url).send().await?;
     let text = resp.text().await?;
     Ok(text)
 }
 
-pub fn parse_version_json(json: &str) -> Result<VersionJson, Box<dyn std::error::Error>> {
+pub fn parse_version_json(json: &str) -> Result<VersionJson> {
     let version_json: VersionJson = serde_json::from_str(json)?;
     Ok(version_json)
 }
 
-pub async fn download_file(client: &Client,url: &str, path: &str) -> Result<(), Box<dyn std::error::Error>> {
+pub async fn download_file(client: &Client,url: &str, path: &str) -> Result<()> {
     let resp = client.get(url).send().await?;
     let bytes = resp.bytes().await?;
     let parent = Path::new(path).parent().unwrap();
@@ -102,13 +127,13 @@ pub async fn download_assets(
     assets_index_path: &str,
     base_dir: &str,
     window: tauri::Window
-) {
+) -> Result<()> {
     use futures::stream::{FuturesUnordered, StreamExt};
     use serde_json::Value;
     use std::sync::Arc;
     use tokio::sync::Mutex;
-    let index_str = std::fs::read_to_string(assets_index_path).unwrap();
-    let index_json: Value = serde_json::from_str(&index_str).unwrap();
+    let index_str = std::fs::read_to_string(assets_index_path)?;
+    let index_json: Value = serde_json::from_str(&index_str)?;
     let objects = &index_json["objects"];
     let total = objects.as_object().unwrap().len();
     let progress = Arc::new(Mutex::new(0));
@@ -130,11 +155,20 @@ pub async fn download_assets(
                 let mut prog=  progress.lock().await;
                 *prog += 1;
                 let _ = window.emit("progress", *prog as f64 / total as f64);
-                let _ = window.emit("log", format!("Descargado asset: {}", asset_name));
+                let _ = window.emit("log", format!("Downloaded asset: {}", asset_name));
+                Ok::<(), LauncherError>(())
             }));
         }
     }
 
-    while let Some(_) = futures.next().await {}
+    while let Some(result) = futures.next().await {
+        match result {
+            Ok(_) => {},
+            Err(e) => {
+                let _ = window.emit("error", format!("Error downloading assets: {}", e)).ok();
+            }
+        }
+    }
     let _ = window.emit("progress", 1.0);
+    Ok(())
 }

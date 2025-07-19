@@ -5,6 +5,8 @@ import { listen } from "@tauri-apps/api/event";
 import ListVersions from "./components/ListVersions";
 import TitleBar from "./components/TitleBar";
 import { Version } from "./utils/types";
+import ConfigModal from "./components/ConfigModal";
+import Settings from "./icons/Settings";
 
 function App() {
   const [logs, setLogs] = createSignal<string[]>([]);
@@ -13,11 +15,30 @@ function App() {
   const [selectedVersion, setSelectedVersion] = createSignal("1.20.1");
   const [showVersionSelector, setShowVersionSelector] = createSignal(false);
   const [versions, setVersions] = createSignal<Version[]>([]);
+  const [config, setConfig] = createSignal<any>({});
+  const [showConfigModal, setShowConfigModal] = createSignal(false);
+  const [playerName, setPlayerName] = createSignal("Player");
   const MAX_LOGS = 50;
   let logRef: HTMLDivElement | undefined;
 
   async function startLauncher() {
+    //TODO
+    //await invoke("update_config", { config: { ...config(), player_name: playerName() } });
     await invoke("start_launcher", { version: selectedVersion() });
+  }
+
+  async function getConfig() {
+    const config = await invoke("get_config");
+    console.log(config);
+    setConfig(config);
+    setPlayerName(config.player_name);
+  }
+
+  async function updateConfig(config: any) {
+    //TODO
+    // await invoke("update_config", { config });
+    setConfig(config);
+    setShowConfigModal(false);
   }
 
   async function getVersions() {
@@ -27,6 +48,7 @@ function App() {
 
   onMount(() => {
     getVersions();
+    getConfig();
   });
 
   listen("log", (event) => {
@@ -48,6 +70,13 @@ function App() {
     <>
       <TitleBar />
       <main class="h-screen flex flex-col items-center justify-center bg-gradient-to-br from-green-100 via-blue-50 to-white p-4">
+        <button
+          class="absolute top-12 left-2 bg-gray-800 hover:bg-gray-700 text-white shadow-lg rounded-lg p-2 transition"
+          aria-label="Config"
+          onClick={() => setShowConfigModal(true)}
+        >
+          <Settings />
+        </button>
         <img
           src="logo.png"
           alt="Satellite Logo"
@@ -105,7 +134,7 @@ function App() {
         </div>
         <div class="w-full mt-4">
           <div
-            class="bg-black/80 rounded-lg p-4 font-mono text-sm text-green-100 shadow-inner h-40 overflow-y-auto border border-gray-700"
+            class="bg-black/80 rounded-lg p-4 font-mono whitespace-pre text-sm text-green-100 shadow-inner h-40 overflow-y-auto border border-gray-700" 
             ref={logRef}
           >
             {getLog()}
@@ -132,6 +161,13 @@ function App() {
           {showAll() ? "Hide" : "Show All"}
         </button>
       </main>
+      {showConfigModal() && (
+        <ConfigModal
+          config={config()}
+          onSave={updateConfig}
+          onClose={() => setShowConfigModal(false)}
+        />
+      )}
     </>
   );
 }

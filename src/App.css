@@ -7,6 +7,38 @@ body {
   padding: 0;
   overflow: hidden;
 }
+
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(20px);}
+  to   { opacity: 1; transform: none;}
+}
+.animate-fade-in {
+  animation: fade-in 0.3s cubic-bezier(.39,.58,.57,1) both;
+}
+
+@keyframes slide-in {
+  from { transform: translateX(-100%); opacity: 0; }
+  to   { transform: translateX(0); opacity: 1; }
+}
+.slide-in {
+  animation: slide-in 0.3s cubic-bezier(.39,.58,.57,1) both;
+}
+
+@keyframes slide-out {
+  from { transform: translateX(0); opacity: 1; }
+  to   { transform: translateX(-100%); opacity: 0; }
+}
+.slide-out {
+  animation: slide-out 0.3s cubic-bezier(.39,.58,.57,1) both;
+}
+
+@keyframes fade-out {
+  from { opacity: 1; transform: translateY(0); }
+  to   { opacity: 0; transform: translateY(-20px); }
+}
+.fade-out {
+  animation: fade-out 0.3s cubic-bezier(.39,.58,.57,1) both;
+}
 /* .logo.vite:hover {
   filter: drop-shadow(0 0 2em #747bff);
 }
