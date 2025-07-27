@@ -1,26 +1,26 @@
+use reqwest::Client;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use tauri::Emitter;
 use std::fs;
 use std::io::Write;
 use std::path::Path;
-use reqwest::Client;
+use tauri::Emitter;
 use thiserror::Error;
 
 #[derive(Debug, Error)]
 pub enum LauncherError {
     #[error("Network error: {0}")]
     Network(#[from] reqwest::Error),
-    
+
     #[error("File system error: {0}")]
     FileSystem(#[from] std::io::Error),
-    
+
     #[error("JSON parsing error: {0}")]
     JsonParsing(#[from] serde_json::Error),
-    
+
     #[error("Version not found: {version}")]
     VersionNotFound { version: String },
-    
+
     #[error("Failed to launch Minecraft: {error}")]
     MinecraftLaunchError { error: String },
 
@@ -110,7 +110,7 @@ pub fn parse_version_json(json: &str) -> Result<VersionJson> {
     Ok(version_json)
 }
 
-pub async fn download_file(client: &Client,url: &str, path: &str) -> Result<()> {
+pub async fn download_file(client: &Client, url: &str, path: &str) -> Result<()> {
     let resp = client.get(url).send().await?;
     let bytes = resp.bytes().await?;
     let parent = Path::new(path).parent().unwrap();
@@ -126,7 +126,7 @@ pub async fn download_assets(
     client: &reqwest::Client,
     assets_index_path: &str,
     base_dir: &str,
-    window: tauri::Window
+    window: tauri::Window,
 ) -> Result<()> {
     use futures::stream::{FuturesUnordered, StreamExt};
     use serde_json::Value;
@@ -142,7 +142,10 @@ pub async fn download_assets(
     for (asset_name, asset_info) in objects.as_object().unwrap() {
         let hash = asset_info["hash"].as_str().unwrap().to_owned();
         let subdir = hash[0..2].to_string();
-        let asset_url = format!("https://resources.download.minecraft.net/{}/{}", subdir, hash);
+        let asset_url = format!(
+            "https://resources.download.minecraft.net/{}/{}",
+            subdir, hash
+        );
         let asset_path = format!("{}/assets/objects/{}/{}", base_dir, subdir, hash);
 
         if !std::path::Path::new(&asset_path).exists() {
@@ -152,7 +155,7 @@ pub async fn download_assets(
             let progress = Arc::clone(&progress);
             futures.push(tokio::spawn(async move {
                 let _ = download_file(&client, &asset_url, &asset_path).await;
-                let mut prog=  progress.lock().await;
+                let mut prog = progress.lock().await;
                 *prog += 1;
                 let _ = window.emit("progress", *prog as f64 / total as f64);
                 let _ = window.emit("log", format!("Downloaded asset: {}", asset_name));
@@ -163,9 +166,11 @@ pub async fn download_assets(
 
     while let Some(result) = futures.next().await {
         match result {
-            Ok(_) => {},
+            Ok(_) => {}
             Err(e) => {
-                let _ = window.emit("error", format!("Error downloading assets: {}", e)).ok();
+                let _ = window
+                    .emit("error", format!("Error downloading assets: {}", e))
+                    .ok();
             }
         }
     }
