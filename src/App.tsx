@@ -22,8 +22,6 @@ function App() {
   const MAX_LOGS = 50;
   let logRef: HTMLDivElement | undefined;
 
-
-
   async function startLauncher() {
     await invoke("update_config", { config: { ...config(), player_name: playerName() } });
     await invoke("start_launcher", { version: selectedVersion() });
