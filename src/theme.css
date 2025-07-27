@@ -1,0 +1,40 @@
+:root {
+  --accent: #22c55e;
+  --bg: #fff;
+  --fg: #222;
+  --sidebar-bg: #fff;
+  --sidebar-fg: #222;
+}
+
+.dark {
+  --bg: #18181b;
+  --fg: #f3f4f6;
+  --sidebar-bg: #23272f;
+  --sidebar-fg: #f3f4f6;
+}
+
+body, html {
+  background: var(--bg);
+  color: var(--fg);
+  transition: background 0.2s, color 0.2s;
+}
+
+.sidebar {
+  background: var(--sidebar-bg);
+  color: var(--sidebar-fg);
+  border-right: 1px solid #e5e7eb;
+  transition: background 0.2s, color 0.2s;
+}
+
+button, .btn {
+  accent-color: var(--accent);
+}
+
+a {
+  color: var(--accent);
+  text-decoration: none;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--accent);
+}

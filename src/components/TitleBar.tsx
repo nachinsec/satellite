@@ -2,7 +2,7 @@ import { getCurrentWindow } from "@tauri-apps/api/window";
 export default function TitleBar() {
   return (
     <div
-      class="flex items-center justify-between px-3 h-10 bg-gray-800 border-b border-gray-800 select-none"
+      class="flex items-center justify-between px-3 h-10 bg-gray-900 border-b border-gray-200 dark:border-gray-700 select-none"
       style={{
         "-webkit-app-region": "drag",
         "user-select": "none",
