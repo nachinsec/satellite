@@ -3,6 +3,7 @@ import ListVersions from "./components/ListVersions";
 import TitleBar from "./components/TitleBar";
 import Sidebar from "./components/Sidebar";
 import { ConfigPage } from "./components/ConfigPage";
+import { ModsPage } from "./components/ModsPage";
 import { Toaster } from "solid-toast";
 import { useLauncher } from "./hooks/useLauncher";
 import { UI_CONSTANTS, CSS_CLASSES } from "./constants";
@@ -26,6 +27,11 @@ function App() {
               playerName={launcher.playerName()}
               setPlayerName={launcher.setPlayerName}
               onSave={launcher.updateConfig}
+            />
+          ) : launcher.activeSection() === "Mods" ? (
+            <ModsPage
+              gameDirectory={launcher.config()?.game_directory || ""}
+              minecraftVersion={launcher.selectedVersion()}
             />
           ) : (
             <>

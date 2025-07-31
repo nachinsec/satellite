@@ -80,6 +80,10 @@ body {
   background: #222;
 }
 
+.scrollbar-hide {
+  -ms-overflow-style: none;  
+  scrollbar-width: none;
+}
 
 * {
   scrollbar-width: thin;

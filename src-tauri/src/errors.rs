@@ -32,6 +32,12 @@ pub enum LauncherError {
     
     #[error("Asset processing error: {message}")]
     AssetError { message: String },
+    
+    #[error("File not found: {0}")]
+    FileNotFound(String),
+    
+    #[error("Invalid path: {0}")]
+    InvalidPath(String),
 }
 
 impl From<LauncherError> for String {

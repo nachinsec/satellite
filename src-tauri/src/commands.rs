@@ -1,6 +1,7 @@
 use crate::config::LauncherConfig;
 use crate::launcher::MinecraftLauncher;
 use crate::minecraft_api::MinecraftVersion;
+use crate::mods::{ModManager, ModInfo, ModSearchResult, ModLoader, search_mods};
 use tauri::Emitter;
 
 /// Get available Minecraft versions
@@ -69,4 +70,47 @@ pub async fn get_system_info() -> Result<serde_json::Value, String> {
     });
     
     Ok(info)
+}
+
+// MOD MANAGEMENT COMMANDS
+
+/// Get all installed mods
+#[tauri::command]
+pub async fn get_installed_mods(game_directory: String) -> Result<Vec<ModInfo>, String> {
+    let mod_manager = ModManager::new(&game_directory);
+    mod_manager.get_installed_mods().map_err(|e| e.to_string())
+}
+
+/// Toggle mod enabled/disabled state
+#[tauri::command]
+pub async fn toggle_mod(game_directory: String, mod_id: String, enabled: bool) -> Result<(), String> {
+    let mod_manager = ModManager::new(&game_directory);
+    mod_manager.toggle_mod(&mod_id, enabled).map_err(|e| e.to_string())
+}
+
+/// Delete a mod
+#[tauri::command]
+pub async fn delete_mod(game_directory: String, mod_id: String) -> Result<(), String> {
+    let mod_manager = ModManager::new(&game_directory);
+    mod_manager.delete_mod(&mod_id).map_err(|e| e.to_string())
+}
+
+/// Install mod from file
+#[tauri::command]
+pub async fn install_mod_from_file(game_directory: String, file_path: String) -> Result<ModInfo, String> {
+    let mod_manager = ModManager::new(&game_directory);
+    mod_manager.install_mod_from_file(&file_path).map_err(|e| e.to_string())
+}
+
+/// Search for mods online
+#[tauri::command]
+pub async fn search_mods_online(
+    query: String,
+    minecraft_version: String,
+    mod_loader: ModLoader,
+    limit: u32,
+) -> Result<Vec<ModSearchResult>, String> {
+    search_mods(&query, &minecraft_version, &mod_loader, limit)
+        .await
+        .map_err(|e| e.to_string())
 }

@@ -7,6 +7,7 @@ mod downloader;
 mod errors;
 mod launcher;
 mod minecraft_api;
+mod mods;
 
 use commands::*;
 
@@ -19,7 +20,12 @@ fn main() {
             get_config,
             update_config,
             validate_config,
-            get_system_info
+            get_system_info,
+            get_installed_mods,
+            toggle_mod,
+            delete_mod,
+            install_mod_from_file,
+            search_mods_online
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
