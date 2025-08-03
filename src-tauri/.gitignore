@@ -12,3 +12,8 @@
 
 # Logs
 /logs
+
+# Cobblemon config
+/config/cobblemon
+
+/showdown

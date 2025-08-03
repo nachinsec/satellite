@@ -200,6 +200,154 @@ impl ModManager {
         
         self.parse_mod_file(&destination)
     }
+
+    /// Install a mod from online source (Modrinth)
+    pub async fn install_mod_online<F>(
+        &self,
+        mod_id: &str,
+        minecraft_version: &str,
+        mod_loader: &ModLoader,
+        progress_callback: F,
+    ) -> Result<ModInfo, LauncherError>
+    where
+        F: Fn(u8),
+    {
+        self.ensure_mods_directory()?;
+        
+        // Get project info from Modrinth
+        let client = reqwest::Client::new();
+        
+        progress_callback(10);
+        
+        // First, get the project to get the correct project ID
+        let project_url = format!("https://api.modrinth.com/v2/project/{}", mod_id);
+        let project_response = client
+            .get(&project_url)
+            .header("User-Agent", "Satellite-Launcher/0.3.0 (contact@satellite-launcher.com)")
+            .send()
+            .await?;
+            
+        if !project_response.status().is_success() {
+            return Err(LauncherError::DownloadFailed {
+                url: project_url,
+                reason: format!("Failed to get project info: {}", project_response.status()),
+            });
+        }
+        
+        let project: serde_json::Value = project_response.json().await?;
+        let project_id = project["id"].as_str().unwrap_or(mod_id);
+        
+        progress_callback(20);
+        
+        // Get versions for this project
+        let versions_url = format!("https://api.modrinth.com/v2/project/{}/version", project_id);
+        let versions_response = client
+            .get(&versions_url)
+            .header("User-Agent", "Satellite-Launcher/0.3.0 (contact@satellite-launcher.com)")
+            .send()
+            .await?;
+            
+        if !versions_response.status().is_success() {
+            return Err(LauncherError::DownloadFailed {
+                url: versions_url,
+                reason: format!("Failed to get versions: {}", versions_response.status()),
+            });
+        }
+        
+        let versions: Vec<serde_json::Value> = versions_response.json().await?;
+        
+        progress_callback(30);
+        
+        // Find the best matching version
+        let loader_str = match mod_loader {
+            ModLoader::Fabric => "fabric",
+            ModLoader::Forge => "forge",
+            ModLoader::Quilt => "quilt",
+            ModLoader::NeoForge => "neoforge",
+        };
+        
+        let mut best_version = None;
+        for version in &versions {
+            let empty_vec = vec![];
+            let game_versions = version["game_versions"].as_array().unwrap_or(&empty_vec);
+            let loaders = version["loaders"].as_array().unwrap_or(&empty_vec);
+            
+            let supports_version = game_versions.iter().any(|v| 
+                v.as_str().map(|s| s == minecraft_version).unwrap_or(false)
+            );
+            let supports_loader = loaders.iter().any(|l| 
+                l.as_str().map(|s| s == loader_str).unwrap_or(false)
+            );
+            
+            if supports_version && supports_loader {
+                best_version = Some(version);
+                break;
+            }
+        }
+        
+        let version = best_version.ok_or_else(|| LauncherError::DownloadFailed {
+            url: versions_url.clone(),
+            reason: format!("No compatible version found for Minecraft {} with {}", minecraft_version, loader_str),
+        })?;
+        
+        progress_callback(40);
+        
+        // Get the download file
+        let files = version["files"].as_array().ok_or_else(|| LauncherError::DownloadFailed {
+            url: versions_url.clone(),
+            reason: "No files found in version".to_string(),
+        })?;
+        
+        let primary_file = files.iter().find(|f| 
+            f["primary"].as_bool().unwrap_or(false)
+        ).or_else(|| files.first()).ok_or_else(|| LauncherError::DownloadFailed {
+            url: versions_url.clone(),
+            reason: "No downloadable files found".to_string(),
+        })?;
+        
+        let download_url = primary_file["url"].as_str().ok_or_else(|| LauncherError::DownloadFailed {
+            url: versions_url.clone(),
+            reason: "No download URL found".to_string(),
+        })?;
+        
+        let filename = primary_file["filename"].as_str().ok_or_else(|| LauncherError::DownloadFailed {
+            url: versions_url.clone(),
+            reason: "No filename found".to_string(),
+        })?;
+        
+        progress_callback(50);
+        
+        // Download the file
+        let download_response = client
+            .get(download_url)
+            .header("User-Agent", "Satellite-Launcher/0.3.0 (contact@satellite-launcher.com)")
+            .send()
+            .await?;
+            
+        if !download_response.status().is_success() {
+            return Err(LauncherError::DownloadFailed {
+                url: download_url.to_string(),
+                reason: format!("Download failed: {}", download_response.status()),
+            });
+        }
+        
+        progress_callback(70);
+        
+        // Save the file
+        let destination = self.mods_directory.join(filename);
+        let bytes = download_response.bytes().await?;
+        fs::write(&destination, bytes)?;
+        
+        progress_callback(90);
+        
+        // Parse the mod file to get mod info
+        let mod_info = self.parse_mod_file(&destination)?;
+        
+        progress_callback(100);
+        
+        Ok(mod_info)
+    }
+
 }
 
 /// Search for mods on Modrinth using the real API

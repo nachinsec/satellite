@@ -17,6 +17,8 @@ export function ModsPage(props: ModsPageProps) {
   const [isSearching, setIsSearching] = createSignal(false);
   const [activeTab, setActiveTab] = createSignal<"installed" | "browse">("installed");
   const [loading, setLoading] = createSignal(false);
+  const [installingMods, setInstallingMods] = createSignal<Set<string>>(new Set());
+  const [installProgress, setInstallProgress] = createSignal<Record<string, number>>({});
 
   // Load installed mods on component mount
   createEffect(() => {
@@ -121,6 +123,51 @@ export function ModsPage(props: ModsPageProps) {
       toast.error("Failed to search mods");
     } finally {
       setIsSearching(false);
+    }
+  };
+
+  const installMod = async (mod: ModSearchResult) => {
+    try {
+      // Add to installing set
+      setInstallingMods(prev => new Set(prev).add(mod.id));
+      setInstallProgress(prev => ({ ...prev, [mod.id]: 0 }));
+      
+      await invoke<ModInfo>("install_mod_online", {
+        gameDirectory: props.gameDirectory,
+        modId: mod.id,
+        minecraftVersion: props.minecraftVersion,
+        modLoader: ModLoader.Fabric,
+      });
+      
+      // Remove from installing set on success
+      setInstallingMods(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(mod.id);
+        return newSet;
+      });
+      setInstallProgress(prev => {
+        const newProgress = { ...prev };
+        delete newProgress[mod.id];
+        return newProgress;
+      });
+      toast.success(`Mod installed successfully!`);
+      // Reload installed mods
+      loadInstalledMods();
+    } catch (error) {
+      console.error("Failed to install mod:", error);
+      toast.error(`Failed to install ${mod.name}: ${error}`);
+      
+      // Remove from installing set on error
+      setInstallingMods(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(mod.id);
+        return newSet;
+      });
+      setInstallProgress(prev => {
+        const newProgress = { ...prev };
+        delete newProgress[mod.id];
+        return newProgress;
+      });
     }
   };
 
@@ -336,10 +383,18 @@ export function ModsPage(props: ModsPageProps) {
                       </div>
                       
                       <button
-                        class={CSS_CLASSES.BUTTON.PRIMARY}
-                        onClick={() => toast("Online mod installation coming soon!")}
+                        class={`${CSS_CLASSES.BUTTON.PRIMARY} ${
+                          installingMods().has(mod.id) ? 'opacity-50 cursor-not-allowed' : ''
+                        }`}
+                        onClick={() => installMod(mod)}
+                        disabled={installingMods().has(mod.id)}
                       >
-                        Install
+                        <Show when={installingMods().has(mod.id)} fallback="Install">
+                          <div class="flex items-center gap-2">
+                            <div class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                            {installProgress()[mod.id] || 0}%
+                          </div>
+                        </Show>
                       </button>
                     </div>
                   </div>

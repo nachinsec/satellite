@@ -26,6 +26,13 @@ pub enum LauncherError {
 
     #[error("Configuration validation error in {field}: {message}")]
     ConfigValidation { field: String, message: String },
+
+    #[error("File system error: {operation} - {path}: {error}")]
+    FileSystemError {
+        operation: String,
+        path: String,
+        error: String,
+    },
 }
 
 pub type Result<T> = std::result::Result<T, LauncherError>;

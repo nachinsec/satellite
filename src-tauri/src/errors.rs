@@ -38,6 +38,13 @@ pub enum LauncherError {
     
     #[error("Invalid path: {0}")]
     InvalidPath(String),
+
+    #[error("File system error: {operation} - {path}: {error}")]
+    FileSystemError {
+        operation: String,
+        path: String,
+        error: String,
+    },
 }
 
 impl From<LauncherError> for String {
@@ -61,6 +68,9 @@ impl From<crate::minecraft_api::LauncherError> for LauncherError {
             }
             crate::minecraft_api::LauncherError::ConfigValidation { field, message } => {
                 LauncherError::ConfigValidation { field, message }
+            }
+            crate::minecraft_api::LauncherError::FileSystemError { operation, path, error } => {
+                LauncherError::FileSystemError { operation, path, error }
             }
         }
     }

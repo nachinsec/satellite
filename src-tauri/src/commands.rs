@@ -114,3 +114,50 @@ pub async fn search_mods_online(
         .await
         .map_err(|e| e.to_string())
 }
+
+/// Install mod from online source (Modrinth)
+#[tauri::command]
+pub async fn install_mod_online(
+    window: tauri::Window,
+    game_directory: String,
+    mod_id: String,
+    minecraft_version: String,
+    mod_loader: ModLoader,
+) -> Result<ModInfo, String> {
+    let mod_manager = ModManager::new(&game_directory);
+    
+    // Emit progress update
+    window.emit("mod_install_progress", serde_json::json!({
+        "mod_id": mod_id,
+        "status": "downloading",
+        "progress": 0
+    })).ok();
+    
+    match mod_manager.install_mod_online(&mod_id, &minecraft_version, &mod_loader, |progress| {
+        // Emit progress updates during download
+        window.emit("mod_install_progress", serde_json::json!({
+            "mod_id": mod_id,
+            "status": "downloading",
+            "progress": progress
+        })).ok();
+    }).await {
+        Ok(mod_info) => {
+            // Emit success
+            window.emit("mod_install_progress", serde_json::json!({
+                "mod_id": mod_id,
+                "status": "completed",
+                "progress": 100
+            })).ok();
+            Ok(mod_info)
+        },
+        Err(e) => {
+            // Emit error
+            window.emit("mod_install_progress", serde_json::json!({
+                "mod_id": mod_id,
+                "status": "error",
+                "error": e.to_string()
+            })).ok();
+            Err(e.to_string())
+        }
+    }
+}

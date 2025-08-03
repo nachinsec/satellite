@@ -25,7 +25,8 @@ fn main() {
             toggle_mod,
             delete_mod,
             install_mod_from_file,
-            search_mods_online
+            search_mods_online,
+            install_mod_online
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
