@@ -2,8 +2,6 @@
 
 A modern and minimal Minecraft launcher built with Tauri + SolidJS.
 
-![Satellite Logo](public/logo.png)
-
 ---
 
 ## What is Satellite?
